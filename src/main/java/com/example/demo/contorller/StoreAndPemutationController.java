@@ -11,16 +11,13 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
-import com.example.demo.persistence.StoreEntity;
-import com.example.demo.persistence.StoreService;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+import com.example.demo.service.InMemoryStorageService;
 
 @RestController
 public class StoreAndPemutationController {
 
 	@Autowired
-	StoreService store;
+	InMemoryStorageService store;
 
 	long counter = 0;
 
@@ -32,13 +29,9 @@ public class StoreAndPemutationController {
 
 				Integer[] arr = Arrays.stream(input.split(",")).map(String::trim).map(Integer::valueOf)
 						.toArray(Integer[]::new);
-				StoreEntity entity = new StoreEntity();
-				entity.setId(++counter);
-				Gson gson = new Gson();
-				String jsonList = gson.toJson(Arrays.asList(arr));
-				entity.setData(jsonList);
-				entity = store.createOrUpdateStore(entity);
-				return entity.getId();
+				store.getLocalStore().put(++counter, arr);
+
+				return counter;
 
 			} else
 				throw new Exception();
@@ -57,14 +50,12 @@ public class StoreAndPemutationController {
 			throw new Exception();
 
 		try {
-			StoreEntity entity = store.getStoreById(id);
-			Gson gson = new Gson();
-                   
-			List<Integer> permutation = gson.fromJson(entity.getData(), new TypeToken<List<Integer>>(){}.getType());
-					Collections.shuffle(permutation);
+
+			List<Integer> permutation = Arrays.asList(store.getLocalStore().get(id));
+			Collections.shuffle(permutation);
 			return permutation.toString().replace("[", "") // remove the right bracket
 					.replace("]", "") // remove the left bracket
-					.replaceAll("\\s+","").trim();
+					.replaceAll("\\s+", "").trim();
 
 		} catch (Throwable e) {
 
